@@ -1,0 +1,14 @@
+{
+  "methods": ["google", "apple", "x"],
+  "headline": "Sign in to Velora",
+  "subtitle": "Manage your account and commerce workspace.",
+  "style": {
+    "mode": "light",
+    "accentColor": "#1f3b32",
+    "backgroundColor": "#f7f7f3",
+    "panelColor": "#ffffff",
+    "textColor": "#171816",
+    "fontFamily": "Inter, system-ui, sans-serif",
+    "borderRadius": 14
+  }
+}
