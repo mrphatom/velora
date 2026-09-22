@@ -84,7 +84,7 @@ The webhook endpoint is:
 
 `POST /api/stripe/webhook`
 
-Configure Stripe to send successful Checkout events to the deployed endpoint. Stripe webhook endpoints use a signing secret to authenticate events. urlStripe webhook endpoint documentationhttps://docs.stripe.com/api/webhook_endpoints
+Configure Stripe to send successful Checkout events to the deployed endpoint. Stripe webhook endpoints use a signing secret to authenticate events. [Stripe webhook endpoint documentation](https://docs.stripe.com/api/webhook_endpoints)
 
 ## Local development
 
