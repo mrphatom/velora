@@ -1,48 +1,90 @@
 # Velora Commerce Studio
 
-A production-oriented full-stack commerce platform built to explore the systems behind a modern storefront — not just the storefront itself.
+A production-oriented full-stack commerce platform built to showcase the engineering behind a real online store — not a static e-commerce mockup.
 
-Velora combines a polished customer shopping experience with a real commerce management workspace covering products, inventory, coupons, orders, storefront content, authentication, payments, and realtime updates.
+Velora combines a customer storefront with a persistent commerce backend, CMS, inventory system, Stripe payments, customer accounts, realtime synchronization, order lifecycle management, refunds, audit logging, and responsive operations tooling.
 
-## Features
+## Product surface
 
-- Dynamic storefront with search, categories, product pages, cart, and checkout
-- CMS for products, coupons, inventory, and storefront content
-- Inventory validation and checkout-time reservations
-- Stripe hosted checkout with payment/session verification and idempotency handling
-- Customer authentication and order history
-- Realtime catalog, order, and commerce updates
+- Dynamic storefront with catalog, categories, search, product detail, cart, and checkout
+- Persistent CMS for products, coupons, inventory, and live storefront content
+- Customer authentication and private order history
+- Stripe-hosted payments with server-side pricing and idempotent checkout creation
+- Inventory reservations during checkout
+- Payment finalization plus signed Stripe webhook processing
+- Customer order cancellation for unpaid orders
+- Customer self-service refund flow with Stripe refund creation and inventory restoration
+- Inventory movement ledger
+- Commerce audit log
+- Realtime catalog and order synchronization
 - Coupon rules with expiry, usage limits, minimum subtotals, and per-customer limits
-- Responsive mobile-first UI with animated interactions
-- Server-side commerce and checkout logic
-- Test coverage definitions for core commerce workflows
+- Responsive Commerce Studio designed for desktop and mobile
+- Failure handling for stale carts, unavailable inventory, invalid coupons, duplicate checkout attempts, failed payment flows, and API errors
 
 ## Architecture
 
-**Frontend:** React, TypeScript, Vite, Tailwind CSS
+**Frontend**
 
-**Backend:** AppDeploy runtime, persistent database, authentication, realtime subscriptions, Stripe
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- AppDeploy client API
+- WebSocket realtime synchronization
 
-**Commerce flow:**
+**Backend**
 
-`Catalog → Cart → Coupon → Inventory reservation → Stripe Checkout → Payment verification → Order fulfillment`
+- AppDeploy server runtime
+- Persistent database
+- Authenticated API routes
+- Stripe API integration
+- Signed webhook verification
+- Inventory reservation and movement records
+- Order lifecycle state transitions
+- Audit records
+- Idempotency handling
 
-The backend owns critical state transitions while the frontend handles presentation and interaction.
+### Core commerce flow
 
-## Core data
+`Catalog → Cart → Server quote → Inventory reservation → Stripe Checkout → Payment verification → Order paid → Fulfillment / Refund`
+
+Critical totals, inventory decisions, payment state, and order ownership are handled server-side.
+
+## Data model
+
+The application uses persistent records for:
 
 - Products
 - Store settings
 - Coupons
 - Orders
 - Inventory reservations
-- Customer accounts
+- Inventory movements
+- Audit logs
+- Realtime subscriptions
 
-## Why I built it
+## Security-oriented behavior
 
-Velora started as an e-commerce UI project and evolved into an exercise in the less-visible parts of commerce engineering: state consistency, inventory, payments, authentication, CMS workflows, realtime synchronization, and failure handling.
+- Customer order endpoints verify ownership before exposing order data.
+- Manual order creation is disabled.
+- Unpaid orders can only be cancelled by their owner.
+- Paid orders use Stripe for refunds instead of simply changing a local status.
+- Stripe webhook requests require a configured signing secret.
+- Inventory changes are recorded as movements during payment and refund flows.
+- Stripe secrets remain backend-only.
 
-The goal is to make the application feel like a real product rather than a static portfolio mockup.
+## Stripe configuration
+
+The backend expects:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+The webhook endpoint is:
+
+`POST /api/stripe/webhook`
+
+Configure Stripe to send successful Checkout events to the deployed endpoint. Stripe webhook endpoints use a signing secret to authenticate events. urlStripe webhook endpoint documentationhttps://docs.stripe.com/api/webhook_endpoints
 
 ## Local development
 
@@ -57,14 +99,20 @@ Production build:
 npm run build
 ```
 
-## Environment
+## Testing
 
-Stripe checkout requires a server-side `STRIPE_SECRET_KEY` configured through the deployment platform's secret management.
+The repository includes an end-to-end test contract covering:
 
-Never expose the Stripe secret key in frontend code.
+1. Persistent storefront/cart behavior
+2. Real CMS product CRUD and inventory
+3. Coupon CRUD and enforcement
+4. Mobile storefront-content management
+5. Authenticated checkout, payment, order lifecycle, refunds, inventory restoration, and audit behavior
 
 ## Project status
 
-Actively developed portfolio project focused on full-stack commerce architecture, product engineering, and production-oriented application behavior.
+Velora is an actively developed portfolio project focused on full-stack product engineering and production-oriented commerce architecture.
+
+The goal is not to demonstrate a collection of UI screens. The goal is to demonstrate the systems required to make those screens trustworthy.
 
 Built by [@mrphatom](https://github.com/mrphatom).
