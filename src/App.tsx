@@ -76,6 +76,8 @@ type Order = {
   total: number;
   status: string;
   createdAt: string;
+  refundId?: string;
+  refundedAt?: string;
 };
 
 const seedProducts: Product[] = [
@@ -202,6 +204,7 @@ function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [settings, setSettings] = useState<StoreSettings>(defaultSettings);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
+  const [orderBusy, setOrderBusy] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [page, setPage] = useState<
     'home' | 'shop' | 'product' | 'checkout' | 'admin' | 'account'
@@ -406,6 +409,40 @@ function App() {
       alert(e instanceof Error ? e.message : 'Unable to start secure checkout.');
     } finally {
       setCheckoutBusy(false);
+    }
+  };
+
+  const cancelOrder = async (id: string) => {
+    if (!window.confirm('Cancel this unpaid order?')) return;
+    setOrderBusy(id);
+    try {
+      const r = await api.post('/api/orders/' + id + '/cancel');
+      if (r.data?.order) {
+        setCustomerOrders(items => items.map(item => item.id === id ? r.data.order : item));
+        setOrders(items => items.map(item => item.id === id ? r.data.order : item));
+        setNotice('Order cancelled and inventory released.');
+      }
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Could not cancel order.');
+    } finally {
+      setOrderBusy(null);
+    }
+  };
+
+  const refundOrder = async (id: string) => {
+    if (!window.confirm('Request a full refund for this order?')) return;
+    setOrderBusy(id);
+    try {
+      const r = await api.post('/api/orders/' + id + '/refund');
+      if (r.data?.order) {
+        setCustomerOrders(items => items.map(item => item.id === id ? r.data.order : item));
+        setOrders(items => items.map(item => item.id === id ? r.data.order : item));
+        setNotice('Refund submitted and inventory restored.');
+      }
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : 'Could not refund order.');
+    } finally {
+      setOrderBusy(null);
     }
   };
 
@@ -735,7 +772,7 @@ function App() {
                     return <div className="flex items-center gap-3" key={line.id + '-' + index}><img className="w-12 h-12 rounded-lg object-cover" src={line.image} /><div className="flex-1"><b>{line.name}</b><small className="block opacity-60">Qty {line.quantity}</small></div><span>{money(line.price * line.quantity)}</span></div>;
                   })}
                 </div>
-                <div className="flex justify-between border-t border-[var(--line)] mt-4 pt-4"><span>Total</span><b>{money(o.total)}</b></div>
+                <div className="flex justify-between border-t border-[var(--line)] mt-4 pt-4"><span>Total</span><b>{money(o.total)}</b></div><div className="flex flex-wrap gap-2 mt-4">{o.status === 'Awaiting payment' && <button className="secondary" disabled={orderBusy === o.id} onClick={() => cancelOrder(o.id)}>{orderBusy === o.id ? 'Working…' : 'Cancel order'}</button>}{(o.status === 'Paid' || o.status === 'Fulfilled') && !o.refundId && <button className="secondary" disabled={orderBusy === o.id} onClick={() => refundOrder(o.id)}>{orderBusy === o.id ? 'Working…' : 'Request refund'}</button>}</div>
               </div>
             )) : <div className="empty"><ShoppingBag size={30} /><h3>No orders yet</h3><p>Your paid orders will appear here.</p><button className="primary mt-4" onClick={() => setPage('shop')}>Start shopping</button></div>}
           </div>
@@ -774,7 +811,7 @@ function App() {
                   <small>Encrypted & secure</small>
                 </div>
                   <button className="primary wide" onClick={checkout} disabled={authLoading || checkoutBusy}>
-                  {authLoading ? 'Checking account…' : checkoutBusy ? 'Securing your checkout…' : `Pay ${money(total + (subtotal >= 150000 ? 0 : 4500))} with Stripe`} <CreditCard size={17} />
+                  {authLoading ? 'Checking account…' : checkoutBusy ? 'Securing your checkout…' : `Pay ${money(total)} with Stripe`} <CreditCard size={17} />
                 </button>
                 <small className="block text-center opacity-60 mt-3">You’ll be redirected to Stripe’s secure hosted checkout.</small>
               </div>
@@ -808,10 +845,10 @@ function App() {
                   Discount <b>-{money(discount)}</b>
                 </span>
                 <span>
-                  Delivery <b>{subtotal >= 150000 ? 'Free' : money(4500)}</b>
+                  Delivery <b>{delivery === 0 ? 'Free' : money(delivery)}</b>
                 </span>
                 <strong>
-                  Total <b>{money(total + (subtotal >= 150000 ? 0 : 4500))}</b>
+                  Total <b>{money(total)}</b>
                 </strong>
               </div>
             </aside>
